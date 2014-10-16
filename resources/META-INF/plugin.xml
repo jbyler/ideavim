@@ -3,6 +3,16 @@
   <id>IdeaVIM</id>
   <change-notes>
     <![CDATA[
+      <p>0.37-jbyler-1:</p>
+      <ul>
+        <li>Merge PR-42, fixing VIM-652, support for mapping arbitrary IDEA actions</li>
+        <li>Merge PR-41, fixing VIM-511, buggy repeat with embedded backspace</li>
+        <li>Merge PR-39, fixing VIM-714, set last column to caret column after delete</li>
+        <li>Merge PR-36, fixing VIM-476, support for "set clipboard=unnamed"</li>
+        <li>Merge PR-35, fixing VIM-624, deselect visual range in ex entry field</li>
+        <li>Merge PR-33, fixing VIM-264, [cdv][ai]t change in tag</li>
+        <li>Merge PR-32, fixing VIM-287, Bug with O command on folded code</li>
+      </ul>
       <p>0.37:</p>
       <ul>
         <li>Various bug fixes</li>

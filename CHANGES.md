@@ -3,6 +3,20 @@ The Changelog
 
 History of changes in IdeaVim for the IntelliJ platform.
 
+0.37-jbyler-1, 2014-10-15
+----------------
+
+A custom build by user jbyler, merging many of the outstanding pull requests.
+This is not an official release from JetBrains and is unsupported.  I just
+forked IdeaVIM and merged the pull requests.
+
+* PR-42, fixing VIM-652, support for mapping arbitrary IDEA actions
+* PR-41, fixing VIM-511, buggy repeat with embedded backspace
+* PR-39, fixing VIM-714, set last column to caret column after delete
+* PR-36, fixing VIM-476, support for "set clipboard=unnamed"
+* PR-35, fixing VIM-624, deselect visual range in ex entry field
+* PR-33, fixing VIM-264, [cdv][ai]t change in tag
+* PR-32, fixing VIM-287, Bug with O command on folded code
 
 0.37, 2014-10-15
 ----------------
