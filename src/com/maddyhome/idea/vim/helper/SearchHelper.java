@@ -29,7 +29,9 @@ import com.maddyhome.idea.vim.option.Options;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * Helper methods for searching text
@@ -179,6 +181,203 @@ public class SearchHelper {
     return res;
   }
 
+  public static @Nullable TextRange findTagBlockRange(@NotNull Editor editor, int cnt, boolean isOuter) {
+    return findTagBlockRange(editor.getDocument().getCharsSequence(), editor.getCaretModel().getOffset(), cnt, isOuter);
+  }
+
+  public static @Nullable TextRange findTagBlockRange(@NotNull CharSequence chars, int pos, int cnt, boolean isOuter) {
+    Pair<Integer, Integer> blockRange = null;
+
+    while(0 < cnt) {
+      blockRange = findTagBlock(chars, pos, isOuter);
+
+      if(blockRange == null)
+        return null;
+
+      pos = blockRange.getFirst() - 1;
+      isOuter = !isOuter;
+      cnt--;
+    }
+
+    return new TextRange(blockRange.getFirst(), blockRange.getSecond());
+  }
+
+  private static @Nullable Pair<Integer, Integer> findTagBlock(@NotNull CharSequence chars, int pos, boolean isOuter) {
+    //<b></b> is the minimal tag pair
+    if(chars.length() < 7)
+      return null;
+
+    int[] blockRange = new int[]{chars.charAt(pos) == '>' ? pos : pos + 1, pos};
+    Stack<String> unmatchedTags = new Stack<String>();
+
+    //Search backwards for first unmatched opening tag
+    while (0 < blockRange[0]) {
+      blockRange[0]--;
+
+      char c = chars.charAt(blockRange[0]);
+
+      //Closing angle bracket triggers tag search
+      if ('>' == c) {
+        int precedingRAB = blockRange[0] - 1;
+        int leftAngleBracket = findBlockLocation(chars, '>', '<', -1, blockRange[0], 1);
+
+        if(0 > leftAngleBracket) {
+          continue;
+        }
+
+        blockRange[0] = leftAngleBracket;
+
+        //'/' followed by a '>' indicates an empty tag, skip it
+        if(precedingRAB < chars.length() && '/' == chars.charAt(precedingRAB)) {
+          continue;
+        }
+      }
+      else if('<' == c) {
+        int proceedingLAB = blockRange[0] + 1;
+        int precedingRAB = findBlockLocation(chars, '<', '>', 1, blockRange[0], 1) - 1;
+
+        if(0 > precedingRAB) {
+          continue;
+        }
+        else if(proceedingLAB < chars.length() && chars.charAt(proceedingLAB) == '/') {
+          continue;
+        }
+        else if(precedingRAB < chars.length() && chars.charAt(precedingRAB) == '/') {
+          continue;
+        }
+      } else
+        continue;
+
+      //Lookahead in order to grab tag id
+      int[] tagName = new int[2];
+      tagName[0] = blockRange[0] + 1;
+      int wordScanCount = chars.charAt(tagName[0]) == '/' ? 2 : 1;
+      tagName[1] = findNextWord(chars, tagName[0], chars.length(), wordScanCount, false, false);
+
+      String nameToken = chars.subSequence(tagName[0], tagName[1]).toString().trim();
+
+      if(nameToken.isEmpty()) {
+        continue;
+      }
+      else if(nameToken.startsWith("/")) {
+          //Push tag id onto stack
+          unmatchedTags.push(nameToken.substring(1));
+      }
+      else if(unmatchedTags.isEmpty() || !unmatchedTags.peek().equals(nameToken)) {
+            unmatchedTags.push(nameToken);
+            break;
+      }
+      else {
+        unmatchedTags.pop();
+      }
+    }
+
+    if(unmatchedTags.isEmpty()) {
+        return null;
+    }
+
+    blockRange[1] = findBlockLocation(chars, '<', '>', 1, blockRange[0], 1) + 1;
+
+    if(!isOuter) {
+      blockRange[0] = blockRange[1];
+    }
+
+    //Always leave at least four characters for the closing tag
+    if(0 > blockRange[0] || blockRange[0] > chars.length() - 5) {
+      return null;
+    }
+
+    int endOfLastClosingAngleBracket = -1;
+
+    //Search forwards for matching closing tag
+    while(blockRange[1] < chars.length() - 1) {
+      blockRange[1]++;
+      char c = chars.charAt(blockRange[1]);
+
+      if ('<' == c) {
+        //Grab the matching closing angle bracket
+        endOfLastClosingAngleBracket = findBlockLocation(chars, '<', '>', 1, blockRange[1], 1);
+
+        if(0 > endOfLastClosingAngleBracket) {
+          continue;
+        }
+
+        //'/' followed by a '>' indicates an empty tag, skip it
+        else if(0 < endOfLastClosingAngleBracket && '/' == chars.charAt(endOfLastClosingAngleBracket - 1)) {
+          blockRange[1] = endOfLastClosingAngleBracket;
+          continue;
+        }
+      }
+      else if('>' == c) {
+        //'/' followed by a '>' indicates an empty tag, skip it
+        if(0 < blockRange[1] && '/' == chars.charAt(blockRange[1] - 1)) {
+          continue;
+        }
+
+        //Backtrack to previous opening angle bracket
+        endOfLastClosingAngleBracket = blockRange[1];
+        int leftAngleBracket = findBlockLocation(chars, '>', '<', -1, blockRange[1], 1);
+
+        if(0 > leftAngleBracket) {
+          continue;
+        }
+
+        blockRange[1] = leftAngleBracket;
+      }
+      else {
+        continue;
+      }
+
+      //Lookahead in order to grab tag id
+      int[] tagName = new int[2];
+      tagName[0] = blockRange[1] + 1;
+      int wordScanCount = chars.charAt(tagName[0]) == '/' ? 2 : 1;
+      tagName[1] = findNextWord(chars, tagName[0], chars.length(), wordScanCount, false, false);
+      String nameToken = chars.subSequence(tagName[0], tagName[1]).toString().trim();
+
+      if(nameToken.isEmpty()) {
+        blockRange[1] = endOfLastClosingAngleBracket;
+        continue;
+      }
+      else if(nameToken.startsWith("/")) {
+        //Attempt to pop the stack
+        if(unmatchedTags.peek().equals(nameToken.substring(1))) {
+          unmatchedTags.pop();
+          if(unmatchedTags.isEmpty())
+            break;
+        }
+        //Interleaving is not allowed.
+        else {
+          return null;
+        }
+      }
+      else {
+        unmatchedTags.push(nameToken);
+      }
+      blockRange[1] = endOfLastClosingAngleBracket;
+    }
+
+    //If there are any unmatched tags left, tags are malformed.
+    if(!unmatchedTags.isEmpty()) {
+      return null;
+    }
+
+    //If there the last closing angle bracket is missing or we've advanced past it, undefined.
+    if(endOfLastClosingAngleBracket == -1 || endOfLastClosingAngleBracket < blockRange[1]) {
+      return null;
+    }
+
+    //Adjust block range.
+    if(isOuter) {
+      blockRange[1] = endOfLastClosingAngleBracket;
+    }
+    else {
+      blockRange[1]--;
+    }
+
+    return new Pair<Integer, Integer>(blockRange[0], blockRange[1]);
+  }
+
   private static int findBlockLocation(@NotNull CharSequence chars, char found, char match, int dir, int pos, int cnt) {
     int res = -1;
     final int inCheckPos = dir < 0 && pos > 0 ? pos - 1 : pos;
@@ -248,7 +447,7 @@ public class SearchHelper {
   private static int findPreviousQuoteInLine(@NotNull CharSequence chars, int pos, char quote) {
     return findQuoteInLine(chars, pos, quote, Direction.BACK);
   }
-  
+
   private static int findFirstQuoteInLine(@NotNull Editor editor, int pos, char quote) {
     final int start = EditorHelper.getLineStartForOffset(editor, pos);
     return findNextQuoteInLine(editor.getDocument().getCharsSequence(), start, quote);
