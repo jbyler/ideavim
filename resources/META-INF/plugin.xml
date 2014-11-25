@@ -56,7 +56,7 @@
   </change-notes>
   <description>
     <![CDATA[
-      <p>Build @VERSION@-@BUILD-NUMBER@</p>
+      <p>Build 0.38-jbyler-3-dev</p>
       <p>Vim emulation plug-in for IDEs based on the IntelliJ platform.</p>
       <p>IdeaVim supports many Vim features including normal/insert/visual modes, motion keys, deletion/changing, marks, registers, some Ex commands, Vim regexps, configuration via ~/.ideavimrc, macros, window commands, etc.</p>
       <p>See also:</p>
@@ -66,10 +66,10 @@
       </ul>
     ]]>
   </description>
-  <version>@VERSION@</version>
+  <version>0.38-jbyler-3</version>
   <vendor>JetBrains</vendor>
 
-  <idea-version since-build="@SINCE-VERSION@"/>
+  <idea-version since-build="135.0"/>
 
   <!-- Mark the plugin as compatible with RubyMine and other products based on the IntelliJ platform -->
   <depends>com.intellij.modules.lang</depends>
