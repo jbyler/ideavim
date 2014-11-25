@@ -115,6 +115,9 @@ public class SearchHelper {
     }
 
     int bend = findBlockLocation(chars, type, close, 1, bstart + 1, 1);
+    if (bend == -1) {
+      return null;
+    }
 
     if (!isOuter) {
       bstart++;
@@ -729,7 +732,7 @@ public class SearchHelper {
       if (CharacterHelper.charType(chars.charAt(pos - 1), bigWord) == CharacterHelper.CharacterType.WHITESPACE && !spaceWords) {
         pos = skipSpace(chars, pos - 1, step, size) + 1;
       }
-      if (CharacterHelper.charType(chars.charAt(pos), bigWord) != CharacterHelper.charType(chars.charAt(pos - 1), bigWord)) {
+      if (pos > 0 && CharacterHelper.charType(chars.charAt(pos), bigWord) != CharacterHelper.charType(chars.charAt(pos - 1), bigWord)) {
         pos += step;
       }
     }
@@ -1471,7 +1474,7 @@ public class SearchHelper {
         }
       }
       else if (ch == '\n') {
-        int end = offset; // Save where we found the punctuation.
+        int end = offset; // Save where we found the newline.
         if (dir > 0) {
           offset++;
           while (offset < max) {
@@ -1504,15 +1507,17 @@ public class SearchHelper {
           }
         }
         else {
-          offset--;
-          while (offset >= 0) {
-            ch = chars.charAt(offset);
-            if (ch != '\n') {
-              offset++;
-              break;
-            }
-
+          if (offset > 0) {
             offset--;
+            while (offset >= 0) {
+              ch = chars.charAt(offset);
+              if (ch != '\n') {
+                offset++;
+                break;
+              }
+
+              offset--;
+            }
           }
 
           if (offset < end) {
