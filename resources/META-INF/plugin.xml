@@ -3,7 +3,16 @@
   <id>IdeaVIM</id>
   <change-notes>
     <![CDATA[
-      <p>Not released:</p>
+      <p>Not released (0.38-jbyler-3):</p>
+      <ul>
+        <li>PR-55, fixing VIM-723 "p places text on wrong line"</li>
+        <li>PR-54, fixing VIM-771 semicolon repeat for 'till char' motion</li>
+        <li>PR-53, fixing crashes found by fuzzer</li>
+        <li>PR-39, fixing VIM-714 set last column to caret column after delete</li>
+        <li>PR-33, adding VIM-264 [cdv][ai]t change in tag</li>
+        <li>PR-43, fixing VIM-287 Bug with O command on folded code</li>
+      </ul>
+      <p>Not released (master):</p>
       <ul>
         <li>Support for <code>:action</code> and <code>:actionlist</code> for executing arbitrary IDE actions</li>
         <li>Support for <code>number</code> and <code>relativenumber</code> options</li>
