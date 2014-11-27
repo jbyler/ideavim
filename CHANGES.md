@@ -3,6 +3,16 @@ The Changelog
 
 History of changes in IdeaVim for the IntelliJ platform.
 
+0.38-jbyler-2, 2014-11-25
+----------------
+
+A custom build by user jbyler, merging many of the outstanding pull requests.
+This is not an official release from JetBrains and is unsupported.  I just
+forked IdeaVIM and merged the pull requests, with very little testing.
+
+* PR-43, fixing VIM-287 Bug with O command on folded code
+* PR-39, fixing VIM-714 set last column to caret column after delete
+* PR-33, adding VIM-264 [cdv][ai]t change in tag
 
 0.38, TBD
 ---------
