@@ -361,6 +361,11 @@
     <action id="VimCommentLine" class="com.maddyhome.idea.vim.action.change.comment.CommentLineAction" text="Comment Motion"/>
     <action id="VimCommentMotion" class="com.maddyhome.idea.vim.action.change.comment.CommentMotionAction" text="Comment Motion"/>
 
+    <!-- vim-surround plugin -->
+    <action id="VimSurroundMotion" class="com.maddyhome.idea.vim.action.plugin.surround.SurroundMotionAction" text="Surround" />
+    <action id="VimChangeSurrounding" class="com.maddyhome.idea.vim.action.plugin.surround.ChangeSurroundingAction" text="Change Surround" />
+    <action id="VimDeleteSurrounding" class="com.maddyhome.idea.vim.action.plugin.surround.DeleteSurroundingAction" text="Delete Surround" />
+
     <!-- Keys -->
     <action id="VimShortcutKeyAction" class="com.maddyhome.idea.vim.action.VimShortcutKeyAction" text="Vim Shortcuts"/>
   </actions>
