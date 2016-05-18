@@ -3,6 +3,7 @@ The Changelog
 
 History of changes in IdeaVim for the IntelliJ platform.
 
+<<<<<<< HEAD
 0.39-jbyler-5, 2014-12-12
 ----------------
 
@@ -13,17 +14,47 @@ forked IdeaVIM and merged the pull requests, with very little testing.
 * PR-59, fixing VIM-855 Regexp character class bugs
 * PR-39, fixing VIM-714 set last column to caret column after delete
 * PR-33, adding VIM-264 [cdv][ai]t change in tag
+||||||| merged common ancestors
+=======
+0.39-jbyler-7, 2015-05-04
+----------------
+
+A custom build by user jbyler, merging many of the outstanding pull requests.
+This is not an official release from JetBrains and is unsupported.  I just
+forked IdeaVIM and merged the pull requests, with very little testing.
+
+* PR-33, adding VIM-264 [cdv][ai]t change in tag
+* PR-71, replace % with current file for external commands
+* PR-76, VIM-176 Fix arrow key navigation in console output
+* PR-86, Add `gc` verb that accepts a motion to comment
+* PR-87, VIM-769 Support for vim-surround
+>>>>>>> master
 
 Not Released
 ------------
 
-A bugfix release.
+Added support for `mapleader`. Support comments in `%` brace matching.
+
+Features:
+
+* VIM-650 Added support for `mapleader`
+* VIM-932 Support comments in `%` brace matching
 
 Bug fixes:
 
 * VIM-586 Invoke Vim shortcuts handler later to restore the sequence of input
   events
 * VIM-838 `J` shouldn't add whitespace if there is a trailing space
+* VIM-855 Fixed regexp character class problem
+* VIM-210 Fix focus issues with the Ex panel and splits
+* VIM-575 Don't change cursor position of other splits in visual mode
+* VIM-864 Fixed visual marks getting changed during visual substitute
+* VIM-856 Fixed regex look-behind problem
+* VIM-868 Allow count on `gt` and `gT`
+* VIM-700 Remapping `0` should still allow it to be entered in command count
+* VIM-781 Fixed expanding visual block selection past empty lines
+* VIM-845 Fixed `c` and `x` functionality for visual block selections
+* VIM-930 Fixed editor focus issues after closing Ex entry box on Oracle Java 6
 
 
 0.39, 2014-12-03

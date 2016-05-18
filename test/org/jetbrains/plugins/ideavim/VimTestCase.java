@@ -1,6 +1,7 @@
 package org.jetbrains.plugins.ideavim;
 
 import com.intellij.ide.highlighter.JavaFileType;
+import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.openapi.application.PathManager;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Editor;
@@ -18,6 +19,7 @@ import com.maddyhome.idea.vim.KeyHandler;
 import com.maddyhome.idea.vim.VimPlugin;
 import com.maddyhome.idea.vim.command.CommandState;
 import com.maddyhome.idea.vim.ex.ExOutputModel;
+import com.maddyhome.idea.vim.ex.vimscript.VimScriptGlobalEnvironment;
 import com.maddyhome.idea.vim.helper.EditorDataContext;
 import com.maddyhome.idea.vim.helper.RunnableHelper;
 import com.maddyhome.idea.vim.helper.StringHelper;
@@ -39,25 +41,34 @@ public abstract class VimTestCase extends UsefulTestCase {
 
   public VimTestCase() {
     // Only in IntelliJ IDEA Ultimate Edition
-    PlatformTestCase.initPlatformLangPrefix();
+    //PlatformTestCase.initPlatformLangPrefix();
     // XXX: IntelliJ IDEA Community and Ultimate 12+
-    //PlatformTestCase.initPlatformPrefix(ULTIMATE_MARKER_CLASS, "PlatformLangXml");
+    PlatformTestCase.initPlatformPrefix(ULTIMATE_MARKER_CLASS, "PlatformLangXml");
   }
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     final IdeaTestFixtureFactory factory = IdeaTestFixtureFactory.getFixtureFactory();
-    final LightProjectDescriptor projectDescriptor = LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR;
+    final LightProjectDescriptor projectDescriptor = createProjectDescriptor();
     final TestFixtureBuilder<IdeaProjectTestFixture> fixtureBuilder = factory.createLightFixtureBuilder(projectDescriptor);
     final IdeaProjectTestFixture fixture = fixtureBuilder.getFixture();
-    myFixture = IdeaTestFixtureFactory.getFixtureFactory().createCodeInsightFixture(fixture,
-                                                                                    new LightTempDirTestFixtureImpl(true));
+    myFixture = createCodeInsightFixture(fixture, new LightTempDirTestFixtureImpl(true));
     myFixture.setUp();
     myFixture.setTestDataPath(getTestDataPath());
     KeyHandler.getInstance().fullReset(myFixture.getEditor());
     Options.getInstance().resetAllOptions();
     VimPlugin.getKey().resetKeyMappings();
+  }
+
+  protected LightProjectDescriptor createProjectDescriptor() {
+    return LightProjectDescriptor.EMPTY_PROJECT_DESCRIPTOR;
+  }
+
+  protected CodeInsightTestFixture createCodeInsightFixture(IdeaProjectTestFixture fixture,
+                                                            LightTempDirTestFixtureImpl lightTempDirTestFixture) {
+    return IdeaTestFixtureFactory.getFixtureFactory()
+      .createCodeInsightFixture(fixture, lightTempDirTestFixture);
   }
 
   protected String getTestDataPath() {
@@ -68,7 +79,8 @@ public abstract class VimTestCase extends UsefulTestCase {
   protected void tearDown() throws Exception {
     myFixture.tearDown();
     myFixture = null;
-    ExEntryPanel.getInstance().deactivate();
+    ExEntryPanel.getInstance().deactivate(false);
+    VimScriptGlobalEnvironment.getInstance().getVariables().clear();
     super.tearDown();
   }
 
@@ -87,6 +99,12 @@ public abstract class VimTestCase extends UsefulTestCase {
   @NotNull
   protected Editor configureByJavaText(@NotNull String content) {
     myFixture.configureByText(JavaFileType.INSTANCE, content);
+    return myFixture.getEditor();
+  }
+
+  @NotNull
+  protected Editor configureByXmlText(@NotNull String content) {
+    myFixture.configureByText(XmlFileType.INSTANCE, content);
     return myFixture.getEditor();
   }
 
@@ -148,5 +166,22 @@ public abstract class VimTestCase extends UsefulTestCase {
 
   public void assertPluginError(boolean isError) {
     assertEquals(isError, VimPlugin.isError());
+  }
+
+  public void doTest(final List<KeyStroke> keys, String before, String after) {
+    myFixture.configureByText(PlainTextFileType.INSTANCE, before);
+    final Editor editor = myFixture.getEditor();
+    final KeyHandler keyHandler = KeyHandler.getInstance();
+    final EditorDataContext dataContext = new EditorDataContext(editor);
+    final Project project = myFixture.getProject();
+    RunnableHelper.runWriteCommand(project, new Runnable() {
+      @Override
+      public void run() {
+        for (KeyStroke key : keys) {
+          keyHandler.handleKey(editor, key, dataContext);
+        }
+      }
+    }, null, null);
+    myFixture.checkResult(after);
   }
 }

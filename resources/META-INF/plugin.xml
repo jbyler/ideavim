@@ -3,6 +3,7 @@
   <id>IdeaVIM</id>
   <change-notes>
     <![CDATA[
+<<<<<<< HEAD
       <p>Not released (0.39-jbyler-5):</p>
       <ul>
         <li>PR-59, fixing VIM-855 Regexp character class bugs</li>
@@ -10,7 +11,22 @@
         <li>PR-33, adding VIM-264 [cdv][ai]t change in tag</li>
       </ul>
       <p>Not released (master):</p>
+||||||| merged common ancestors
+      <p>Not released:</p>
+=======
+      <p>Not released (0.39-jbyler-7):</p>
+>>>>>>> master
       <ul>
+        <li>PR-33, adding VIM-264 [cdv][ai]t change in tag</li>
+        <li>PR-71, replace % with current file for external commands</li>
+        <li>PR-76, VIM-176 Fix arrow key navigation in console output</li>
+        <li>PR-86, Add `gc` verb that accepts a motion to comment</li>
+        <li>PR-87, VIM-769 Support for vim-surround</li>
+      </ul>
+      <p>Not released (master):</p>
+      <ul>
+        <li>Support for <code>mapleader</code></li>
+        <li>Support comments in <code>%</code> brace matching</li>
         <li>Various bug fixes</li>
       </ul>
       <p>0.39:</p>
@@ -360,6 +376,15 @@
     <action id="VimResetMode" class="com.maddyhome.idea.vim.action.ResetModeAction" text="Reset Mode"/>
     <action id="VimRedo" class="com.maddyhome.idea.vim.action.change.RedoAction" text="Redo"/>
     <action id="VimUndo" class="com.maddyhome.idea.vim.action.change.UndoAction" text="Undo"/>
+
+    <!-- Comments -->
+    <action id="VimCommentLine" class="com.maddyhome.idea.vim.action.change.comment.CommentLineAction" text="Comment Motion"/>
+    <action id="VimCommentMotion" class="com.maddyhome.idea.vim.action.change.comment.CommentMotionAction" text="Comment Motion"/>
+
+    <!-- vim-surround plugin -->
+    <action id="VimSurroundMotion" class="com.maddyhome.idea.vim.action.plugin.surround.SurroundMotionAction" text="Surround" />
+    <action id="VimChangeSurrounding" class="com.maddyhome.idea.vim.action.plugin.surround.ChangeSurroundingAction" text="Change Surround" />
+    <action id="VimDeleteSurrounding" class="com.maddyhome.idea.vim.action.plugin.surround.DeleteSurroundingAction" text="Delete Surround" />
 
     <!-- Keys -->
     <action id="VimShortcutKeyAction" class="com.maddyhome.idea.vim.action.VimShortcutKeyAction" text="Vim Shortcuts"/>

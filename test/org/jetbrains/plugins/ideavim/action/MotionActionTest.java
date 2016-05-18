@@ -80,7 +80,7 @@ public class MotionActionTest extends VimTestCase {
   public void testBackToDigraph() {
     typeTextInFile(parseKeys("F<C-K>O:"),
                    "Hallo, Öster<caret>reich!\n");
-    assertOffset(7);
+    myFixture.checkResult("Hallo, <caret>Österreich!\n");
     assertMode(COMMAND);
   }
 
@@ -426,6 +426,76 @@ public class MotionActionTest extends VimTestCase {
     assertOffset(3);
   }
 
+  // |%|
+  public void testPercentMatchXmlCommentStart() {
+    configureByXmlText("<caret><!-- foo -->");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("<!-- foo --<caret>>");
+  }
+
+  // |%|
+  public void testPercentDoesntMatchPartialXmlComment() {
+    configureByXmlText("<!<caret>-- ");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("<!<caret>-- ");
+  }
+
+  // |%|
+  public void testPercentMatchXmlCommentEnd() {
+    configureByXmlText("<!-- foo --<caret>>");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("<caret><!-- foo -->");
+  }
+
+  // |%|
+  public void testPercentMatchJavaCommentStart() {
+    configureByJavaText("/<caret>* foo */");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("/* foo *<caret>/");
+  }
+
+  // |%|
+  public void testPercentDoesntMatchPartialJavaComment() {
+    configureByJavaText("<caret>/* ");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("<caret>/* ");
+  }
+
+  // |%|
+  public void testPercentMatchJavaCommentEnd() {
+    configureByJavaText("/* foo <caret>*/");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("<caret>/* foo */");
+  }
+
+  // |%|
+  public void testPercentMatchJavaDocCommentStart() {
+    configureByJavaText("/*<caret>* foo */");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("/** foo *<caret>/");
+  }
+
+  // |%|
+  public void testPercentMatchJavaDocCommentEnd() {
+    configureByJavaText("/** foo *<caret>/");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("<caret>/** foo */");
+  }
+
+  // |%|
+  public void testPercentDoesntMatchAfterCommentStart() {
+    configureByJavaText("/*<caret> foo */");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("/*<caret> foo */");
+  }
+
+  // |%|
+  public void testPercentDoesntMatchBeforeCommentEnd() {
+    configureByJavaText("/* foo <caret> */");
+    typeText(parseKeys("%"));
+    myFixture.checkResult("/* foo <caret> */");
+  }
+
   // |[(|
   public void testUnmatchedOpenParenthesis() {
     typeTextInFile(parseKeys("[("),
@@ -580,24 +650,6 @@ public class MotionActionTest extends VimTestCase {
     assertOffset(4);
   }
 
-  // VIM-43 |i| |`.|
-  public void testGotoLastChangePosition() {
-    typeTextInFile(parseKeys("i", "hello ", "<Esc>", "gg", "`."),
-                   "one two\n" +
-                   "<caret>hello world\n" +
-                   "three four\n");
-    assertOffset(13);
-  }
-
-  // VIM-43 |p| |`.|
-  public void testGotoLastPutPosition() {
-    typeTextInFile(parseKeys("yy", "p", "gg", "`."),
-                   "one two\n" +
-                   "<caret>three\n" +
-                   "four five\n");
-    assertOffset(14);
-  }
-
   // VIM-262 |c_CTRL-R|
   public void testSearchFromRegister() {
     VimPlugin.getRegister().setKeys('a', stringToKeys("two"));
@@ -613,6 +665,35 @@ public class MotionActionTest extends VimTestCase {
     typeTextInFile(parseKeys("viw", "<Esc>", "0", "viw", "gv", "d"),
                    "foo <caret>bar\n");
     myFixture.checkResult("foo \n");
+  }
+
+  // |CTRL-V|
+  public void testVisualBlockSelectionsDisplayedCorrectlyMovingRight() {
+    typeTextInFile(parseKeys("<C-V>jl"),
+                   "<caret>foo\n" +
+                   "bar\n");
+    myFixture.checkResult("<selection>fo</selection>o\n" +
+                          "<selection>ba</selection>r\n");
+  }
+
+  // |CTRL-V|
+  public void testVisualBlockSelectionsDisplayedCorrectlyMovingLeft() {
+    typeTextInFile(parseKeys("<C-V>jh"),
+                   "fo<caret>o\n" +
+                   "bar\n");
+    myFixture.checkResult("f<selection>oo</selection>\n" +
+                          "b<selection>ar</selection>\n");
+  }
+
+  // |CTRL-V|
+  public void testVisualBlockSelectionsDisplayedCorrectlyInDollarMode() {
+    typeTextInFile(parseKeys("<C-V>jj$"),
+                   "a<caret>b\n" +
+                   "abc\n" +
+                   "ab\n");
+    myFixture.checkResult("a<selection>b</selection>\n" +
+                          "a<selection>bc</selection>\n" +
+                          "a<selection>b</selection>\n");
   }
 
   // |v_o|

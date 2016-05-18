@@ -18,9 +18,17 @@
 
 package com.maddyhome.idea.vim.helper;
 
+import com.intellij.lang.*;
+import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.SelectionModel;
+import com.intellij.openapi.editor.actions.SelectWordAtCaretAction;
 import com.intellij.openapi.util.Pair;
+import com.intellij.psi.PsiComment;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.util.*;
 import com.maddyhome.idea.vim.common.TextRange;
 import com.maddyhome.idea.vim.option.ListOption;
 import com.maddyhome.idea.vim.option.OptionChangeEvent;
@@ -145,6 +153,42 @@ public class SearchHelper {
     return new TextRange(bstart, bend);
   }
 
+  private static int findMatchingBlockCommentPair(@NotNull PsiComment comment, int pos, @Nullable String prefix,
+                                                  @Nullable String suffix) {
+    if (prefix != null && suffix != null) {
+      final String commentText = comment.getText();
+      if (commentText.startsWith(prefix) && commentText.endsWith(suffix)) {
+        final int endOffset = comment.getTextOffset() + comment.getTextLength();
+        if (pos < comment.getTextOffset() + prefix.length()) {
+          return endOffset;
+        }
+        else if (pos >= endOffset - suffix.length()) {
+          return comment.getTextOffset();
+        }
+      }
+    }
+    return -1;
+  }
+
+  private static int findMatchingBlockCommentPair(@NotNull PsiElement element, int pos) {
+    final Language language = PsiUtil.findLanguageFromElement(element);
+    final Commenter commenter = LanguageCommenters.INSTANCE.forLanguage(language);
+    final PsiComment comment = PsiTreeUtil.getParentOfType(element, PsiComment.class, false);
+    if (comment != null) {
+      final int ret = findMatchingBlockCommentPair(comment, pos, commenter.getBlockCommentPrefix(),
+                                                   commenter.getBlockCommentSuffix());
+      if (ret >= 0) {
+        return ret;
+      }
+      if (commenter instanceof CodeDocumentationAwareCommenter) {
+        final CodeDocumentationAwareCommenter docCommenter = (CodeDocumentationAwareCommenter)commenter;
+        return findMatchingBlockCommentPair(comment, pos, docCommenter.getDocumentationCommentPrefix(),
+                                            docCommenter.getDocumentationCommentSuffix());
+      }
+    }
+    return -1;
+  }
+
   /**
    * This looks on the current line, starting at the cursor position for one of {, }, (, ), [, or ]. It then searches
    * forward or backward, as appropriate for the associated match pair. String in double quotes are skipped over.
@@ -155,10 +199,16 @@ public class SearchHelper {
    *         were found on the remainder of the current line.
    */
   public static int findMatchingPairOnCurrentLine(@NotNull Editor editor) {
+    int pos = editor.getCaretModel().getOffset();
+
+    final int commentPos = findMatchingComment(editor, pos);
+    if (commentPos >= 0) {
+      return commentPos;
+    }
+
     int line = editor.getCaretModel().getLogicalPosition().line;
     int end = EditorHelper.getLineEndOffset(editor, line, true);
     CharSequence chars = editor.getDocument().getCharsSequence();
-    int pos = editor.getCaretModel().getOffset();
     int loc = -1;
     // Search the remainder of the current line for one of the candidate characters
     while (pos < end) {
@@ -184,9 +234,24 @@ public class SearchHelper {
     return res;
   }
 
+  /**
+   * If on the start/end of a block comment, jump to the matching of that comment, or vice versa.
+   */
+  private static int findMatchingComment(@NotNull Editor editor, int pos) {
+    final PsiFile psiFile = PsiHelper.getFile(editor);
+    if (psiFile != null) {
+      final PsiElement element = psiFile.findElementAt(pos);
+      if (element != null) {
+        return findMatchingBlockCommentPair(element, pos);
+      }
+    }
+    return -1;
+  }
+
   public static @Nullable TextRange findTagBlockRange(@NotNull Editor editor, int cnt, boolean isOuter) {
     return findTagBlockRange(editor.getDocument().getCharsSequence(), editor.getCaretModel().getOffset(), cnt, isOuter);
   }
+
 
   public static @Nullable TextRange findTagBlockRange(@NotNull CharSequence chars, int pos, int cnt, boolean isOuter) {
     Pair<Integer, Integer> blockRange = null;
@@ -208,6 +273,9 @@ public class SearchHelper {
   private static @Nullable Pair<Integer, Integer> findTagBlock(@NotNull CharSequence chars, int pos, boolean isOuter) {
     //<b></b> is the minimal tag pair
     if(chars.length() < 7)
+      return null;
+    
+    if(chars.length() < pos || pos < 0)
       return null;
 
     int[] blockRange = new int[]{chars.charAt(pos) == '>' ? pos : pos + 1, pos};
@@ -266,11 +334,12 @@ public class SearchHelper {
           //Push tag id onto stack
           unmatchedTags.push(nameToken.substring(1));
       }
-      else if(unmatchedTags.isEmpty() || !unmatchedTags.peek().equals(nameToken)) {
+      //As soon as we find an unbalanced unmatched tag, we've found our starting tag
+      else if(unmatchedTags.isEmpty()) {
             unmatchedTags.push(nameToken);
             break;
       }
-      else {
+      else if(unmatchedTags.peek().equals(nameToken)) {
         unmatchedTags.pop();
       }
     }
@@ -279,19 +348,21 @@ public class SearchHelper {
         return null;
     }
 
-    blockRange[1] = findBlockLocation(chars, '<', '>', 1, blockRange[0], 1) + 1;
-
+    int startOfOpeningTag = blockRange[0];
+    int startOfBlock = findBlockLocation(chars, '<', '>', 1, blockRange[0], 1) + 1;
+    
+    blockRange[1] = startOfBlock;
     if(!isOuter) {
-      blockRange[0] = blockRange[1];
+      blockRange[0] = startOfBlock;
     }
 
     //Always leave at least four characters for the closing tag
-    if(0 > blockRange[0] || blockRange[0] > chars.length() - 5) {
+    if(0 > blockRange[0] || blockRange[0] > chars.length() - 4) {
       return null;
     }
 
     int endOfLastClosingAngleBracket = -1;
-
+    
     //Search forwards for matching closing tag
     while(blockRange[1] < chars.length() - 1) {
       blockRange[1]++;
@@ -343,15 +414,32 @@ public class SearchHelper {
         continue;
       }
       else if(nameToken.startsWith("/")) {
+        String top = unmatchedTags.peek();
+
         //Attempt to pop the stack
-        if(unmatchedTags.peek().equals(nameToken.substring(1))) {
+        if (top.equals(nameToken.substring(1))) {
           unmatchedTags.pop();
-          if(unmatchedTags.isEmpty())
-            break;
+          if (unmatchedTags.isEmpty()) break;
         }
-        //Interleaving is not allowed.
+        //There is no matching opening tag for this closing tag
         else {
-          return null;
+          boolean matchFound = false;
+          //Try discarding some tags
+          while(!unmatchedTags.isEmpty()) {
+            matchFound = unmatchedTags.pop().equals(nameToken.substring(1));
+            if(matchFound)
+              break;
+          }
+          
+          //If there is no match, we need to look even further back
+          if(unmatchedTags.isEmpty()) {
+            //If there is a match we're done
+            if(matchFound) {
+              break;
+            }
+            return findTagBlock(chars, startOfOpeningTag - 1, isOuter);
+          }
+          //If there is a match, but there are tags left, continue
         }
       }
       else {
@@ -365,15 +453,20 @@ public class SearchHelper {
       return null;
     }
 
-    //If there the last closing angle bracket is missing or we've advanced past it, undefined.
+    //If the last closing angle bracket is missing or we've advanced past it, behavior undefined.
     if(endOfLastClosingAngleBracket == -1 || endOfLastClosingAngleBracket < blockRange[1]) {
       return null;
     }
 
-    //Adjust block range.
+    //Adjust block range to outer
     if(isOuter) {
       blockRange[1] = endOfLastClosingAngleBracket;
     }
+    //If inner select in empty block, behavior undefined.
+    else if (blockRange[0] == blockRange[1]) {
+      return null;
+    }
+    //Adjust block range to inner
     else {
       blockRange[1]--;
     }
@@ -434,7 +527,7 @@ public class SearchHelper {
 
     private final int value;
 
-    private Direction(int i) {
+    Direction(int i) {
       value = i;
     }
 

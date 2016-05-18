@@ -53,6 +53,7 @@ import java.util.Stack;
  * actions. This is a singleton.
  */
 public class KeyHandler {
+
   /**
    * Returns a reference to the singleton instance of this class
    *
@@ -92,6 +93,14 @@ public class KeyHandler {
   }
 
   /**
+   * Simulate Vim's getchar()
+   * @param listener Listener to be notified when a char is read
+   */
+  public void getChar(final GetCharListener listener) {
+    pendingGetCharListener = listener;
+  }
+
+  /**
    * This is the main key handler for the Vim plugin. Every keystroke not handled directly by Idea is sent here for
    * processing.
    *
@@ -111,28 +120,34 @@ public class KeyHandler {
     editor = InjectedLanguageUtil.getTopLevelEditor(editor);
     final CommandState editorState = CommandState.getInstance(editor);
 
-    if (allowKeyMappings && handleKeyMapping(editor, key, context)) {
-      return;
-    }
-
-    final boolean isRecording = editorState.isRecording();
-    boolean shouldRecord = true;
     // If this is a "regular" character keystroke, get the character
     char chKey = key.getKeyChar() == KeyEvent.CHAR_UNDEFINED ? 0 : key.getKeyChar();
 
-    if (isEditorReset(key, editorState)) {
-      handleEditorReset(editor, key, context);
+    final boolean isRecording = editorState.isRecording();
+    boolean shouldRecord = true;
+
+    final GetCharListener getCharListener = pendingGetCharListener;
+    if (getCharListener != null) {
+      pendingGetCharListener = null;
+      getCharListener.onCharTyped(key, chKey);
+      return;
     }
-    // At this point the user must be typing in a command. Most commands can be preceded by a number. Let's
-    // check if a number can be entered at this point, and if so, did the user send us a digit.
+    // Check for command count before key mappings - otherwise e.g. ':map 0 ^' breaks command counts that contain a zero
     else if (isCommandCount(editorState, chKey)) {
       // Update the count
       count = count * 10 + (chKey - '0');
     }
+    else if (allowKeyMappings && handleKeyMapping(editor, key, context)) {
+      return;
+    }
     // Pressing delete while entering a count "removes" the last digit entered
+    // Unlike the digits, this must be checked *after* checking for key mappings
     else if (isDeleteCommandCount(key, editorState)) {
       // "Remove" the last digit sent to us
       count /= 10;
+    }
+    else if (isEditorReset(key, editorState)) {
+      handleEditorReset(editor, key, context);
     }
     // If we got this far the user is entering a command or supplying an argument to an entered command.
     // First let's check to see if we are at the point of expecting a single character argument to a command.
@@ -591,6 +606,16 @@ public class KeyHandler {
   }
 
   /**
+   * Check if the given keystroke was a "cancel";
+   *  pressing escape or ctrl-c constitutes a "cancel."
+   */
+  public static boolean isCancelStroke(KeyStroke key) {
+    return key.getKeyCode() == KeyEvent.VK_ESCAPE
+           || ((key.getModifiers() | KeyEvent.CTRL_DOWN_MASK) == KeyEvent.CTRL_DOWN_MASK
+               && key.getKeyCode() == KeyEvent.VK_C);
+  }
+
+  /**
    * Partially resets the state of this handler. Resets the command count, clears the key list, resets the key tree
    * node to the root for the current mode we are in.
    *
@@ -631,6 +656,7 @@ public class KeyHandler {
     lastChar = 0;
     lastWasBS = false;
     VimPlugin.getRegister().resetRegister();
+    pendingGetCharListener = null;
   }
 
   /**
@@ -700,6 +726,7 @@ public class KeyHandler {
   @Nullable private DigraphSequence digraph = null;
   private char lastChar;
   private boolean lastWasBS;
+  private GetCharListener pendingGetCharListener;
 
   private static KeyHandler instance;
 }
