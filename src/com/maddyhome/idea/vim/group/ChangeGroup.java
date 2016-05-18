@@ -924,7 +924,8 @@ public class ChangeGroup {
       else {
         pos = EditorHelper.normalizeOffset(editor, range.getStartOffset(), isChange);
       }
-      MotionGroup.moveCaret(editor, pos);
+      int column = EditorHelper.offsetToCharacterPosition(editor, pos).column;
+      EditorData.setLastColumn(editor, column);
     }
     return res;
   }
@@ -1557,6 +1558,7 @@ public class ChangeGroup {
         VimPlugin.getMark().setMark(editor, '.', start);
         VimPlugin.getMark().setMark(editor, '[', start);
         VimPlugin.getMark().setMark(editor, ']', start);
+        editor.getCaretModel().moveToOffset(start);
       }
 
       return true;

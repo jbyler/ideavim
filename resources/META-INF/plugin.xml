@@ -3,7 +3,19 @@
   <id>IdeaVIM</id>
   <change-notes>
     <![CDATA[
+<<<<<<< HEAD
+      <p>Not released (0.39-jbyler-5):</p>
+      <ul>
+        <li>PR-59, fixing VIM-855 Regexp character class bugs</li>
+        <li>PR-39, fixing VIM-714 set last column to caret column after delete</li>
+        <li>PR-33, adding VIM-264 [cdv][ai]t change in tag</li>
+      </ul>
+      <p>Not released (master):</p>
+||||||| merged common ancestors
+      <p>Not released:</p>
+=======
       <p>Not released (0.39-jbyler-7):</p>
+>>>>>>> master
       <ul>
         <li>PR-33, adding VIM-264 [cdv][ai]t change in tag</li>
         <li>PR-71, replace % with current file for external commands</li>

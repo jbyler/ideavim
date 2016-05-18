@@ -3,6 +3,19 @@ The Changelog
 
 History of changes in IdeaVim for the IntelliJ platform.
 
+<<<<<<< HEAD
+0.39-jbyler-5, 2014-12-12
+----------------
+
+A custom build by user jbyler, merging many of the outstanding pull requests.
+This is not an official release from JetBrains and is unsupported.  I just
+forked IdeaVIM and merged the pull requests, with very little testing.
+
+* PR-59, fixing VIM-855 Regexp character class bugs
+* PR-39, fixing VIM-714 set last column to caret column after delete
+* PR-33, adding VIM-264 [cdv][ai]t change in tag
+||||||| merged common ancestors
+=======
 0.39-jbyler-7, 2015-05-04
 ----------------
 
@@ -15,6 +28,7 @@ forked IdeaVIM and merged the pull requests, with very little testing.
 * PR-76, VIM-176 Fix arrow key navigation in console output
 * PR-86, Add `gc` verb that accepts a motion to comment
 * PR-87, VIM-769 Support for vim-surround
+>>>>>>> master
 
 Not Released
 ------------
